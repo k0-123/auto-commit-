@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Automatically parse, review, and push your competitive programming solutions to GitHub.",
   "action": {
-    "default_popup": "index.html",
+    "default_popup": "popup.html",
     "default_title": "AutoCommit"
   },
   "options_page": "options.html",
