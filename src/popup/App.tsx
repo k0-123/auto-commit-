@@ -1,0 +1,686 @@
+import React, { useEffect, useState } from 'react'
+import { readState, writeState } from '../shared/storage'
+import { fetchUserProfile, fetchUserRepos, fetchRepoBranches, getFileSha, pushFileToGitHub } from '../shared/github-api'
+import { LANGUAGE_EXTENSIONS } from '../shared/constants'
+import type { Submission, PushRecord } from '../shared/types'
+
+export default function App(): JSX.Element {
+  // Config & State
+  const [token, setToken] = useState<string | null>(null)
+  const [username, setUsername] = useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [repos, setRepos] = useState<Array<{ fullName: string }>>([])
+  const [branches, setBranches] = useState<string[]>([])
+  
+  const [selectedRepo, setSelectedRepo] = useState<string>('')
+  const [selectedBranch, setSelectedBranch] = useState<string>('main')
+  const [folderStructure, setFolderStructure] = useState<'platform' | 'difficulty' | 'flat'>('platform')
+  
+  const [pendingSubmission, setPendingSubmission] = useState<Submission | null>(null)
+  const [pushHistory, setPushHistory] = useState<readonly PushRecord[]>([])
+
+  // UI States
+  const [patInput, setPatInput] = useState('')
+  const [commitMessage, setCommitMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [showManualForm, setShowManualForm] = useState(false)
+  const [isCodeExpanded, setIsCodeExpanded] = useState(false)
+
+  // Manual Form States
+  const [manualTitle, setManualTitle] = useState('')
+  const [manualUrl, setManualUrl] = useState('')
+  const [manualCode, setManualCode] = useState('')
+  const [manualLang, setManualLang] = useState('python3')
+  const [manualPlatform, setManualPlatform] = useState<'leetcode' | 'codeforces'>('leetcode')
+  const [manualDifficulty, setManualDifficulty] = useState('Easy')
+
+  // Load state on mount
+  useEffect(() => {
+    loadStorageState()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const loadStorageState = async () => {
+    try {
+      const state = await readState()
+      if (state) {
+        setToken(state.gitHubToken)
+        setUsername(state.gitHubUsername)
+        setPushHistory(state.pushHistory ?? [])
+        setPendingSubmission(state.pendingSubmission)
+        setFolderStructure(state.folderStructure ?? 'platform')
+        
+        if (state.selectedRepo) {
+          setSelectedRepo(state.selectedRepo)
+        }
+        if (state.selectedBranch) {
+          setSelectedBranch(state.selectedBranch)
+        }
+
+        if (state.pendingSubmission) {
+          setCommitMessage(`feat: solve ${state.pendingSubmission.problemTitle} (${state.pendingSubmission.platform})`)
+        }
+
+        if (state.gitHubToken) {
+          loadGitHubDetails(state.gitHubToken, state.selectedRepo)
+        }
+      }
+    } catch (e) {
+      setErrorMessage('Failed to load storage state')
+    }
+  }
+
+  const loadGitHubDetails = async (ghToken: string, currentRepo: string | null) => {
+    setIsLoading(true)
+    try {
+      const profile = await fetchUserProfile(ghToken)
+      setUsername(profile.username)
+      setAvatarUrl(profile.avatarUrl)
+
+      const repoList = await fetchUserRepos(ghToken)
+      setRepos(repoList)
+
+      if (currentRepo) {
+        const branchList = await fetchRepoBranches(ghToken, currentRepo)
+        setBranches(branchList)
+      }
+    } catch (e) {
+      setErrorMessage('GitHub token is invalid or expired. Please reconnect.')
+      setToken(null)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleConnectGitHub = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!patInput.trim()) return
+
+    setIsLoading(true)
+    setErrorMessage(null)
+    try {
+      const profile = await fetchUserProfile(patInput)
+      const repoList = await fetchUserRepos(patInput)
+      
+      setToken(patInput)
+      setUsername(profile.username)
+      setAvatarUrl(profile.avatarUrl)
+      setRepos(repoList)
+
+      await writeState({
+        gitHubToken: patInput,
+        gitHubUsername: profile.username,
+      })
+      setSuccessMessage('Successfully connected to GitHub!')
+    } catch (e) {
+      setErrorMessage('Connection failed. Verify your Personal Access Token (PAT).')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRepoChange = async (repoName: string) => {
+    setSelectedRepo(repoName)
+    if (!token) return
+
+    setIsLoading(true)
+    try {
+      const branchList = await fetchRepoBranches(token, repoName)
+      setBranches(branchList)
+      const defaultBranch = branchList.includes('main') ? 'main' : branchList[0] || 'master'
+      setSelectedBranch(defaultBranch)
+      
+      await writeState({
+        selectedRepo: repoName,
+        selectedBranch: defaultBranch,
+      })
+    } catch (e) {
+      setErrorMessage('Failed to load branches for the selected repository.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleBranchChange = async (branchName: string) => {
+    setSelectedBranch(branchName)
+    await writeState({ selectedBranch: branchName })
+  }
+
+  const handleFolderStructureChange = async (structure: 'platform' | 'difficulty' | 'flat') => {
+    setFolderStructure(structure)
+    await writeState({ folderStructure: structure })
+  }
+
+  const handleDisconnect = async () => {
+    setIsLoading(true)
+    try {
+      await writeState({
+        gitHubToken: null,
+        gitHubUsername: null,
+        selectedRepo: null,
+        selectedBranch: null,
+        pendingSubmission: null,
+      })
+      setToken(null)
+      setUsername(null)
+      setAvatarUrl(null)
+      setSelectedRepo('')
+      setSelectedBranch('main')
+      setPendingSubmission(null)
+      setSuccessMessage('Disconnected from GitHub')
+    } catch {
+      setErrorMessage('Failed to disconnect cleanly')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const getPushPath = (sub: Submission): string => {
+    const ext = LANGUAGE_EXTENSIONS[sub.language] || 'txt'
+    const fileName = `${sub.problemTitle.replace(/\s+/g, '')}.${ext}`
+    
+    if (folderStructure === 'platform') {
+      return `${sub.platform}/${fileName}`
+    } else if (folderStructure === 'difficulty') {
+      const formattedDiff = sub.difficulty.replace(/\s+/g, '')
+      return `${formattedDiff}/${fileName}`
+    }
+    return fileName
+  }
+
+  const handlePush = async () => {
+    if (!token || !selectedRepo || !selectedBranch || !pendingSubmission) return
+
+    setIsLoading(true)
+    setErrorMessage(null)
+    setSuccessMessage(null)
+
+    const path = getPushPath(pendingSubmission)
+    try {
+      // 1. Check for existing file SHA for safe conflict handling (FR-10 / FR-11)
+      const sha = await getFileSha(token, selectedRepo, selectedBranch, path)
+
+      // 2. Push file to GitHub
+      const fileHeader = `/*\n * Problem: ${pendingSubmission.problemTitle}\n * Difficulty: ${pendingSubmission.difficulty}\n * Link: ${pendingSubmission.problemUrl}\n * Platform: ${pendingSubmission.platform.toUpperCase()}\n */\n\n`
+      const completeCode = fileHeader + pendingSubmission.code
+
+      const commitSha = await pushFileToGitHub(
+        token,
+        selectedRepo,
+        selectedBranch,
+        path,
+        completeCode,
+        commitMessage,
+        sha
+      )
+
+      // 3. Save to History
+      const newRecord: PushRecord = {
+        id: pendingSubmission.id,
+        problemTitle: pendingSubmission.problemTitle,
+        platform: pendingSubmission.platform,
+        repo: selectedRepo,
+        path,
+        commitSha,
+        timestamp: Date.now(),
+      }
+
+      const updatedHistory = [newRecord, ...pushHistory].slice(0, 10)
+      setPushHistory(updatedHistory)
+
+      await writeState({
+        pushHistory: updatedHistory,
+        pendingSubmission: null,
+      })
+
+      // 4. Reset badge alerts in background script
+      chrome.runtime.sendMessage({ type: 'CLEAR_PENDING' })
+      setPendingSubmission(null)
+      setSuccessMessage(`Successfully pushed to ${selectedRepo}!`)
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : 'Push failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSkip = () => {
+    chrome.runtime.sendMessage({ type: 'CLEAR_PENDING' })
+    setPendingSubmission(null)
+  }
+
+  const handleManualSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!manualTitle.trim() || !manualCode.trim()) return
+
+    const sub: Submission = {
+      id: `manual_${Date.now()}`,
+      problemTitle: manualTitle.trim(),
+      problemSlug: manualTitle.toLowerCase().replace(/\s+/g, '-'),
+      problemUrl: manualUrl.trim() || 'https://github.com',
+      difficulty: manualDifficulty,
+      language: manualLang,
+      code: manualCode,
+      platform: manualPlatform,
+      timestamp: Date.now(),
+    }
+
+    setPendingSubmission(sub)
+    setCommitMessage(`feat: solve ${sub.problemTitle} (${sub.platform})`)
+    setShowManualForm(false)
+    
+    // Clear manual inputs
+    setManualTitle('')
+    setManualUrl('')
+    setManualCode('')
+  }
+
+  // Helper colors for difficulty pills
+  const getDifficultyColor = (diff: string): string => {
+    const d = diff.toLowerCase()
+    if (d.includes('easy') || d === '800' || d === '900') return 'bg-emerald-50 text-emerald-700 border-emerald-250'
+    if (d.includes('medium') || parseInt(d) < 1500) return 'bg-amber-50 text-amber-700 border-amber-250'
+    return 'bg-rose-50 text-rose-700 border-rose-250'
+  }
+
+  return (
+    <main className="flex h-[580px] w-[420px] flex-col bg-slate-50 text-slate-800 antialiased font-sans">
+      {/* Header Bar */}
+      <header className="shrink-0 bg-white border-b border-slate-100 px-5 py-3.5 flex items-center justify-between shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/icons/logo.png"
+            alt="AutoCommit Logo"
+            className="h-9 w-9 rounded-xl shadow-sm border border-slate-100 object-cover"
+          />
+          <div className="flex flex-col">
+            <h1 className="text-sm font-bold text-slate-800 leading-none">AutoCommit</h1>
+            <span className="text-[10px] text-slate-400 font-medium mt-0.5">Competitive Programming → GitHub</span>
+          </div>
+        </div>
+
+        {token && username && (
+          <div className="flex items-center gap-2.5">
+            {avatarUrl && (
+              <img
+                src={avatarUrl}
+                alt={username}
+                className="h-6 w-6 rounded-full border border-slate-200"
+              />
+            )}
+            <button
+              onClick={handleDisconnect}
+              className="text-[10px] font-bold text-slate-400 hover:text-rose-600 transition-colors uppercase tracking-wider"
+            >
+              Disconnect
+            </button>
+          </div>
+        )}
+      </header>
+
+      {/* Main Panel */}
+      <section className="flex-1 min-h-0 flex flex-col p-4 gap-4 overflow-y-auto">
+        {errorMessage && (
+          <div className="shrink-0 rounded-xl bg-rose-50 border border-rose-200/50 p-3 text-center text-xs text-rose-600 font-medium">
+            {errorMessage}
+          </div>
+        )}
+        {successMessage && (
+          <div className="shrink-0 rounded-xl bg-emerald-50 border border-emerald-250/50 p-3 text-center text-xs text-emerald-700 font-medium">
+            {successMessage}
+          </div>
+        )}
+
+        {/* 1. Connect GitHub View */}
+        {!token && (
+          <div className="flex flex-col gap-4 bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+            <h2 className="text-sm font-bold text-slate-800">Connect your GitHub Portfolio</h2>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              CodePush connects to your GitHub profile to securely commit accepted solutions to your repositories.
+            </p>
+            <form onSubmit={handleConnectGitHub} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Personal Access Token (PAT)
+                </label>
+                <input
+                  type="password"
+                  value={patInput}
+                  onChange={(e) => setPatInput(e.target.value)}
+                  placeholder="ghp_xxxxxxxxxxxx"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full rounded-lg bg-brand py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-dark transition-all disabled:opacity-50"
+              >
+                {isLoading ? 'Connecting...' : 'Connect to GitHub'}
+              </button>
+            </form>
+            <div className="text-[11px] text-slate-400 text-center leading-relaxed">
+              Don't have a token?{' '}
+              <a
+                href="https://github.com/settings/tokens/new?scopes=repo"
+                target="_blank"
+                rel="noreferrer"
+                className="text-brand hover:underline font-semibold"
+              >
+                Create a classic PAT with 'repo' scope
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* 2. Repository Configuration View */}
+        {token && !selectedRepo && (
+          <div className="flex flex-col gap-4 bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+            <h2 className="text-sm font-bold text-slate-800">Select Target Repository</h2>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Select which repository you would like CodePush to save your competitive programming submissions in.
+            </p>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Choose Repository
+                </label>
+                <select
+                  value={selectedRepo}
+                  onChange={(e) => handleRepoChange(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-brand transition-all"
+                >
+                  <option value="">-- Select a repository --</option>
+                  {repos.map((repo) => (
+                    <option key={repo.fullName} value={repo.fullName}>
+                      {repo.fullName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 3. Configured Actions & Submission Panel */}
+        {token && selectedRepo && (
+          <>
+            {/* Folder settings panel */}
+            <div className="bg-white border border-slate-100 rounded-xl p-3.5 shadow-sm flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Target Location</span>
+                  <span className="text-xs font-bold text-slate-700 mt-0.5">{selectedRepo} ({selectedBranch})</span>
+                </div>
+                
+                {/* Branch selector */}
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => handleBranchChange(e.target.value)}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 outline-none"
+                >
+                  {branches.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Folder structure selection */}
+              <div className="border-t border-slate-50 pt-2.5 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Folder Format</span>
+                <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/50 shrink-0">
+                  {(['platform', 'difficulty', 'flat'] as const).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => handleFolderStructureChange(s)}
+                      className={`rounded-md px-2 py-0.5 text-[10px] font-bold capitalize transition-all ${
+                        folderStructure === s
+                          ? 'bg-white text-slate-800 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Pending submission module */}
+            {pendingSubmission ? (
+              <div className="bg-white border border-slate-150/70 rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="flex items-start justify-between gap-2 border-b border-slate-50 pb-3">
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <span className="text-[10px] font-bold text-brand uppercase tracking-wider flex items-center gap-1">
+                      <span>🎉</span> Detected Solution
+                    </span>
+                    <a
+                      href={pendingSubmission.problemUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm font-bold text-slate-800 hover:text-brand hover:underline break-words"
+                    >
+                      {pendingSubmission.problemTitle}
+                    </a>
+                    
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <span className="text-[10px] text-slate-400 capitalize font-bold">
+                        {pendingSubmission.platform}
+                      </span>
+                      <span className="text-slate-300 text-[10px]">•</span>
+                      <span className="text-[10px] text-slate-400 capitalize font-bold">
+                        {pendingSubmission.language}
+                      </span>
+                      <span className="text-slate-300 text-[10px]">•</span>
+                      <span className={`rounded px-1.5 py-0.2 text-[9px] font-bold border ${getDifficultyColor(pendingSubmission.difficulty)}`}>
+                        {pendingSubmission.difficulty}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Code Previewer */}
+                <div className="flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsCodeExpanded(!isCodeExpanded)}
+                    className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider hover:text-slate-600 transition-colors"
+                  >
+                    <span>Solution Code</span>
+                    <span>{isCodeExpanded ? 'Collapse ▲' : 'Expand ▼'}</span>
+                  </button>
+                  <pre className={`w-full rounded-lg bg-slate-900 p-3 font-mono text-[11px] text-slate-200 overflow-x-auto border border-slate-950 ${
+                    isCodeExpanded ? 'max-h-[220px]' : 'max-h-[80px]'
+                  } transition-all duration-200`}>
+                    <code>{pendingSubmission.code}</code>
+                  </pre>
+                </div>
+
+                {/* Commit message input */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Commit Message
+                  </label>
+                  <input
+                    type="text"
+                    value={commitMessage}
+                    onChange={(e) => setCommitMessage(e.target.value)}
+                    placeholder="Commit message"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all"
+                  />
+                  <div className="text-[9px] text-slate-400 mt-0.5">
+                    Target Path: <code className="font-mono">{getPushPath(pendingSubmission)}</code>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-2 pt-1 border-t border-slate-50">
+                  <button
+                    type="button"
+                    onClick={handleSkip}
+                    className="flex-1 rounded-lg border border-slate-200 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePush}
+                    disabled={isLoading}
+                    className="flex-1 rounded-lg bg-brand py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-dark transition-all disabled:opacity-50"
+                  >
+                    {isLoading ? 'Pushing...' : 'Push to GitHub'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* All Caught Up Empty State */
+              <div className="bg-white border border-slate-100 rounded-xl p-6 text-center shadow-sm flex flex-col items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 border border-indigo-100 text-brand text-lg">
+                  🍵
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-slate-700">All caught up!</h3>
+                  <p className="text-[11px] text-slate-400 mt-1 max-w-[240px] leading-relaxed">
+                    Submit code on LeetCode or Codeforces to trigger automatic push alerts, or paste code manually.
+                  </p>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => setShowManualForm(!showManualForm)}
+                  className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all mt-1"
+                >
+                  {showManualForm ? 'Hide Manual Form' : 'Manual Paste Push'}
+                </button>
+              </div>
+            )}
+
+            {/* Manual Form Entry Panel */}
+            {showManualForm && !pendingSubmission && (
+              <form
+                onSubmit={handleManualSubmit}
+                className="bg-white border border-slate-150 rounded-xl p-4 shadow-sm flex flex-col gap-3 animate-in fade-in duration-200"
+              >
+                <h3 className="text-xs font-bold text-slate-800">Manual Push</h3>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Title</label>
+                    <input
+                      type="text"
+                      value={manualTitle}
+                      onChange={(e) => setManualTitle(e.target.value)}
+                      placeholder="e.g. Two Sum"
+                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs outline-none focus:border-brand"
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Difficulty</label>
+                    <input
+                      type="text"
+                      value={manualDifficulty}
+                      onChange={(e) => setManualDifficulty(e.target.value)}
+                      placeholder="e.g. Medium or 1200"
+                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs outline-none focus:border-brand"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Problem Link (Optional)</label>
+                  <input
+                    type="url"
+                    value={manualUrl}
+                    onChange={(e) => setManualUrl(e.target.value)}
+                    placeholder="https://leetcode.com/problems/..."
+                    className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs outline-none focus:border-brand"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Platform</label>
+                    <select
+                      value={manualPlatform}
+                      onChange={(e) => setManualPlatform(e.target.value as 'leetcode' | 'codeforces')}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs outline-none"
+                    >
+                      <option value="leetcode">LeetCode</option>
+                      <option value="codeforces">Codeforces</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Language</label>
+                    <select
+                      value={manualLang}
+                      onChange={(e) => setManualLang(e.target.value)}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs outline-none"
+                    >
+                      {Object.keys(LANGUAGE_EXTENSIONS).map((lang) => (
+                        <option key={lang} value={lang}>
+                          {lang}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Code Content</label>
+                  <textarea
+                    value={manualCode}
+                    onChange={(e) => setManualCode(e.target.value)}
+                    placeholder="Paste solution code here..."
+                    rows={4}
+                    className="rounded-lg border border-slate-200 p-2.5 text-xs font-mono outline-none focus:border-brand resize-none"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full rounded-lg bg-brand py-2 text-xs font-semibold text-white hover:bg-brand-dark transition-all"
+                >
+                  Load Solution Preview
+                </button>
+              </form>
+            )}
+
+            {/* Push History logs */}
+            {pushHistory.length > 0 && (
+              <div className="flex flex-col gap-2 bg-white border border-slate-100 rounded-xl p-4 shadow-sm">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Recent Pushes</span>
+                <div className="flex flex-col gap-2 mt-1 division-y division-slate-50">
+                  {pushHistory.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between text-xs py-1">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-slate-700">{item.problemTitle}</span>
+                        <span className="text-[9px] text-slate-400 mt-0.5">
+                          {item.platform.toUpperCase()} → {item.path}
+                        </span>
+                      </div>
+                      <a
+                        href={`https://github.com/${item.repo}/commit/${item.commitSha}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] font-bold text-brand hover:underline shrink-0 ml-4"
+                      >
+                        {item.commitSha.slice(0, 7)}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+    </main>
+  )
+}
