@@ -6,10 +6,10 @@
   "description": "A productivity Chrome extension to manage tasks, track time, and stay focused.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node -e \"const fs = require('fs'); fs.copyFileSync('install.html', 'dist/index.html'); fs.copyFileSync('autocommit.zip', 'dist/autocommit.zip');\"",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --max-warnings 0",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "format": "prettier --write \\\"src/**/*.{ts,tsx,css}\\\"",
     "test": "vitest run",
     "test:watch": "vitest"
   },

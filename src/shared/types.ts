@@ -36,4 +36,12 @@ export interface CodePushState {
   readonly folderStructure: 'platform' | 'difficulty' | 'flat'
   readonly pendingSubmission: Submission | null
   readonly pushHistory: readonly PushRecord[]
+  readonly solvedCountLeetcode?: number
+  readonly solvedCountCodeforces?: number
+  readonly baseLeetcode?: number
+  readonly baseCodeforces?: number
+  readonly dailyGoal?: number
+  readonly dailyStreak?: number
+  readonly lastActiveDay?: string
+  readonly solvedToday?: number
 }

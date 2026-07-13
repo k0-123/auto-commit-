@@ -42,6 +42,14 @@ export const writeState = (
         folderStructure: 'platform',
         pendingSubmission: null,
         pushHistory: [],
+        solvedCountLeetcode: 0,
+        solvedCountCodeforces: 0,
+        baseLeetcode: 0,
+        baseCodeforces: 0,
+        dailyGoal: 3,
+        dailyStreak: 0,
+        lastActiveDay: '',
+        solvedToday: 0,
       }
       const next: CodePushState = { ...previous, ...state, version: STATE_VERSION }
       storage.set({ [STORAGE_KEY]: next }, () => {
