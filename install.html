@@ -24,6 +24,10 @@
       --text-muted: #555555;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -285,6 +289,24 @@
       box-shadow: 2px 2px 0px var(--border-color);
     }
 
+    .btn-group {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .btn-secondary {
+      background-color: #FFFFFF;
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--accent-beige);
+      color: var(--text-main);
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px var(--border-color);
+    }
+
     /* Footer */
     footer {
       margin-top: 60px;
@@ -331,14 +353,15 @@
     <!-- Main Content List -->
     <div class="main-grid">
 
-      <!-- Action Card (Cleaned: Single Download ZIP button) -->
+      <!-- Action Card -->
       <div class="action-card">
         <div class="action-text">
           <h2>Get AutoCommit Bundle</h2>
           <p>Download the prepared resource package directly to your local workspace.</p>
         </div>
-        <div>
+        <div class="btn-group">
           <a href="autocommit.zip" download class="btn">Download ZIP File</a>
+          <a href="#features" class="btn btn-secondary">See Features</a>
         </div>
       </div>
 
@@ -408,7 +431,7 @@
       </div>
 
       <!-- Features Section Header -->
-      <div class="section-header">
+      <div id="features" class="section-header">
         <h2>Extension Features</h2>
       </div>
 
