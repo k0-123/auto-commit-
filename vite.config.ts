@@ -14,8 +14,15 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     hmr: {
+      protocol: 'ws',
+      host: 'localhost',
       port: 5173,
     },
+  },
+  // Workaround for CRXJS client-worker error in dev mode
+  // Prevents "self is not defined" and WebSocket connection issues
+  legacy: {
+    skipWebSocketTokenCheck: true,
   },
   test: {
     environment: 'jsdom',
