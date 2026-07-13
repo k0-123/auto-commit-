@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AutoCommit - Minecraft Style Install Guide</title>
+  <title>AutoCommit - Install Resource Pack</title>
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
   
   <style>
-    /* Reset and Minecraft Background */
+    /* Reset & Minecraft Core Styles */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -19,222 +19,301 @@
     }
     
     body {
-      background-color: #313131;
-      /* Minecraft Dirt Pattern background using CSS */
+      background-color: #1a1a1a;
+      /* Repeating blocky cobblestone/bedrock pattern background */
       background-image: 
-        linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)),
-        repeating-conic-gradient(#5a3d28 0% 25%, #4e3422 0% 50%);
-      background-size: 64px 64px;
+        linear-gradient(rgba(18, 18, 28, 0.85), rgba(18, 18, 28, 0.85)),
+        repeating-conic-gradient(#2e2e2e 0% 25%, #242424 0% 50%);
+      background-size: 40px 40px;
       image-rendering: pixelated;
       font-family: 'VT323', monospace;
       font-size: 24px;
       color: #E0E0E0;
-      min-height: 100/screen;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 40px 20px;
-      overflow-x: hidden;
+      padding: 60px 20px;
     }
 
-    /* Container Box (Stone Block style) */
-    .container {
-      max-width: 800px;
-      width: 100%;
-      background-color: #4A4A4A;
-      border: 8px solid #000000;
-      /* Minecraft double pixel border effect using box-shadow */
-      box-shadow: 
-        inset 4px 4px 0px #8B8B8B,
-        inset -4px -4px 0px #212121;
-      padding: 40px;
-      margin-top: 20px;
+    /* Floating Splash Text Animation */
+    @keyframes splash-float {
+      0% { transform: scale(1) rotate(-5deg); }
+      50% { transform: scale(1.1) rotate(-5deg); }
+      100% { transform: scale(1) rotate(-5deg); }
+    }
+
+    /* Header Title Design */
+    .header-panel {
+      text-align: center;
+      margin-bottom: 50px;
       position: relative;
     }
 
-    /* Header Title (Logo Style) */
-    .title-wrapper {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-
-    .main-title {
+    .minecraft-logo {
       font-family: 'Press Start 2P', monospace;
-      font-size: 32px;
-      color: #FFFF55; /* Minecraft gold */
-      text-shadow: 4px 4px 0px #3F3F00;
-      margin-bottom: 12px;
-      letter-spacing: 2px;
-    }
-
-    .sub-title {
-      font-family: 'VT323', monospace;
-      font-size: 28px;
-      color: #55FF55; /* Minecraft green */
-      text-shadow: 2px 2px 0px #003F00;
-    }
-
-    /* Download Button (Minecraft Button style) */
-    .btn-container {
-      display: flex;
-      justify-content: center;
-      margin: 30px 0;
-    }
-
-    .mc-btn {
+      font-size: 44px;
+      font-weight: bold;
+      color: #C6C6C6;
+      text-shadow: 
+        -4px -4px 0px #555555,
+        4px -4px 0px #555555,
+        -4px 4px 0px #2E2E2E,
+        4px 4px 0px #2E2E2E,
+        8px 8px 0px #111111;
+      letter-spacing: 4px;
+      transform: perspective(100px) rotateX(10deg);
       display: inline-block;
+      margin-bottom: 24px;
+    }
+
+    .splash-text {
+      position: absolute;
+      right: -40px;
+      bottom: -15px;
+      font-family: 'VT323', monospace;
+      font-size: 26px;
+      color: #FFFF55; /* Yellow */
+      text-shadow: 2px 2px 0px #3F3F00;
+      transform: rotate(-5deg);
+      animation: splash-float 1.2s infinite ease-in-out;
+      background-color: rgba(0, 0, 0, 0.4);
+      padding: 4px 12px;
+      border: 2px solid #FFFF55;
+    }
+
+    /* Main Board (Classic GUI Window look) */
+    .gui-box {
+      max-width: 850px;
+      width: 100%;
+      background-color: #c6c6c6; /* Classic gray GUI background */
+      border: 6px solid #000000;
+      /* Precise bevel styling mapping to classic Minecraft dialogs */
+      box-shadow: 
+        inset 6px 6px 0px #ffffff,
+        inset -6px -6px 0px #555555;
+      padding: 36px;
+      position: relative;
+    }
+
+    .gui-header-bar {
+      height: 6px;
+      background: #555555;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #ffffff;
+    }
+
+    /* Sub-Headers (Item Frame style headers) */
+    .gui-section-title {
       font-family: 'Press Start 2P', monospace;
       font-size: 16px;
-      text-decoration: none;
-      color: #E0E0E0;
-      background-color: #7C7C7C;
+      color: #2e2e2e;
+      text-shadow: 1px 1px 0px #ffffff;
+      margin-top: 25px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .gui-section-title::before {
+      content: '';
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      background-color: #55FF55; /* Green active dot */
+      border: 3px solid #000000;
+      box-shadow: 1px 1px 0px #ffffff;
+    }
+
+    /* Steps Area Layout */
+    .step-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    /* Item Card (Wood Plank look) */
+    .item-card {
+      background-color: #3b2f1f; /* Oak Planks background */
+      border: 4px solid #1a140d;
+      box-shadow: 
+        inset 4px 4px 0px #574630,
+        inset -4px -4px 0px #211910;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      transition: transform 0.2s ease;
+    }
+
+    .item-card:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 
+        inset 4px 4px 0px #6b563b,
+        inset -4px -4px 0px #1a140d,
+        4px 4px 0px #000000;
+    }
+
+    .item-number-block {
+      background-color: #2b1f13;
+      border: 4px solid #110c08;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 24px;
+      color: #FFFF55;
+      text-shadow: 2px 2px 0px #3F3F00;
+      box-shadow: inset -3px -3px 0px #40301e;
+      flex-shrink: 0;
+    }
+
+    .item-details h3 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 13px;
+      color: #55FFFF; /* Active cyan */
+      text-shadow: 1px 1px 0px #003F3F;
+      margin-bottom: 6px;
+    }
+
+    .item-details p {
+      font-size: 22px;
+      line-height: 1.4;
+      color: #dfd5c6;
+    }
+
+    .link-highlight {
+      color: #FFFF55;
+      text-decoration: underline;
+    }
+
+    /* Action Button (Classic Button widget) */
+    .action-panel {
+      background-color: #8f8f8f;
       border: 4px solid #000000;
       box-shadow: 
-        inset 4px 4px 0px #AEAEAE,
-        inset -4px -4px 0px #505050;
-      padding: 16px 24px;
-      cursor: pointer;
+        inset 4px 4px 0px #dfdfdf,
+        inset -4px -4px 0px #555555;
+      padding: 30px;
       text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .action-panel p {
+      color: #1c1c1c;
+      font-weight: bold;
+      text-shadow: 1px 1px 0px #ffffff;
+      margin-bottom: 18px;
+    }
+
+    .widget-btn {
+      display: inline-block;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 15px;
+      text-decoration: none;
+      color: #ffffff;
+      background-color: #4a4a4a;
+      border: 4px solid #000000;
+      box-shadow: 
+        inset 4px 4px 0px #707070,
+        inset -4px -4px 0px #2a2a2a;
+      padding: 16px 36px;
+      cursor: pointer;
+      text-shadow: 2px 2px 0px #111111;
       transition: all 0.1s ease;
     }
 
-    .mc-btn:hover {
-      background-color: #8C9CFF; /* Selection blue hover */
-      color: #FFFF55;
+    .widget-btn:hover {
+      background-color: #3c8d3c; /* Green hover state */
       box-shadow: 
-        inset 4px 4px 0px #B8C4FF,
-        inset -4px -4px 0px #4F5CA8;
+        inset 4px 4px 0px #5cb85c,
+        inset -4px -4px 0px #1e4d1e;
+      color: #FFFF55;
     }
 
-    .mc-btn:active {
+    .widget-btn:active {
       box-shadow: 
-        inset -4px -4px 0px #AEAEAE,
-        inset 4px 4px 0px #505050;
+        inset -4px -4px 0px #707070,
+        inset 4px 4px 0px #2a2a2a;
       padding-top: 18px;
       padding-bottom: 14px;
     }
 
-    /* Section styling */
-    .section-title {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 18px;
-      color: #FFAA00; /* Orange */
-      text-shadow: 2px 2px 0px #3F2A00;
-      margin-top: 30px;
-      margin-bottom: 15px;
-      border-bottom: 4px dashed #8B8B8B;
-      padding-bottom: 8px;
-    }
-
-    /* Steps List */
-    .step-card {
-      background-color: #2D2D2D;
-      border: 4px solid #000000;
-      box-shadow: inset 3px 3px 0px #555555;
-      padding: 20px;
-      margin-bottom: 20px;
-      display: flex;
-      gap: 20px;
-      align-items: flex-start;
-    }
-
-    .step-number {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 24px;
-      color: #FFFF55;
-      background-color: #555555;
-      border: 3px solid #000000;
-      padding: 8px 12px;
-      text-shadow: 2px 2px 0px #3F3F00;
-      flex-shrink: 0;
-    }
-
-    .step-text h3 {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 14px;
-      color: #FFFFFF;
-      margin-bottom: 8px;
-    }
-
-    .step-text p {
-      font-size: 22px;
-      line-height: 1.4;
-      color: #B0B0B0;
-    }
-
-    .highlight {
-      color: #55FFFF; /* Cyan highlight */
-    }
-
-    /* Footer */
+    /* Footer Credits */
     footer {
-      margin-top: 40px;
+      margin-top: 50px;
       font-size: 20px;
-      color: #8F8F8F;
-      text-align: center;
-      text-shadow: 2px 2px 0px #000000;
+      color: #555555;
+      text-shadow: 1px 1px 0px #000000;
     }
   </style>
 </head>
 <body>
 
-  <!-- Logo and title -->
-  <div class="title-wrapper">
-    <h1 class="main-title">AUTOCOMMIT</h1>
-    <p class="sub-title">INSTALLATION GUIDE</p>
+  <!-- Minecraft Header Panel -->
+  <div class="header-panel">
+    <h1 class="minecraft-logo">AUTOCOMMIT</h1>
+    <span class="splash-text">100% AUTOMATED!</span>
   </div>
 
-  <div class="container">
+  <!-- Main GUI Block -->
+  <div class="gui-box">
+    <div class="gui-header-bar"></div>
     
-    <h2 class="section-title">DOWNLOAD RESOURCE</h2>
-    <p style="text-align: center; margin-bottom: 10px;">Click the button below to download the latest extension bundle:</p>
-    
-    <div class="btn-container">
-      <a href="autocommit.zip" download class="mc-btn">DOWNLOAD ZIP FILE</a>
+    <!-- Action Download Panel -->
+    <div class="action-panel">
+      <p>GET THE CODEPUSH ZIP RESOURCE PACK:</p>
+      <a href="autocommit.zip" download class="widget-btn">DOWNLOAD RESOURCE ZIP</a>
     </div>
 
-    <h2 class="section-title">INSTALLATION STEPS</h2>
+    <h2 class="gui-section-title">INSTALLATION STEPS</h2>
 
-    <!-- Step 1 -->
-    <div class="step-card">
-      <div class="step-number">1</div>
-      <div class="step-text">
-        <h3>EXTRACT RESOURCE</h3>
-        <p>Locate the downloaded <span class="highlight">autocommit.zip</span> file on your computer and extract it. You will get a folder containing the manifest and compiled scripts.</p>
+    <div class="step-grid">
+      <!-- Step 1 -->
+      <div class="item-card">
+        <div class="item-number-block">1</div>
+        <div class="item-details">
+          <h3>EXTRACT RESOURCE FILES</h3>
+          <p>Unzip the downloaded <span class="link-highlight">autocommit.zip</span> file to a folder on your computer.</p>
+        </div>
       </div>
-    </div>
 
-    <!-- Step 2 -->
-    <div class="step-card">
-      <div class="step-number">2</div>
-      <div class="step-text">
-        <h3>ENABLE DEV MODE</h3>
-        <p>Open Google Chrome and navigate to the Extensions page: <span class="highlight">chrome://extensions/</span>. In the top-right corner, toggle the <span class="highlight">Developer mode</span> switch to ON.</p>
+      <!-- Step 2 -->
+      <div class="item-card">
+        <div class="item-number-block">2</div>
+        <div class="item-details">
+          <h3>OPEN EXTENSIONS DRAWER</h3>
+          <p>Launch Chrome or Edge and navigate to <span class="link-highlight">chrome://extensions/</span> (or edge://extensions/).</p>
+        </div>
       </div>
-    </div>
 
-    <!-- Step 3 -->
-    <div class="step-card">
-      <div class="step-number">3</div>
-      <div class="step-text">
-        <h3>LOAD EXTENSION</h3>
-        <p>Click the <span class="highlight">Load unpacked</span> button in the top-left corner, navigate to the folder where you extracted the files, and click select.</p>
+      <!-- Step 3 -->
+      <div class="item-card">
+        <div class="item-number-block">3</div>
+        <div class="item-details">
+          <h3>ACTIVATE DEVELOPER MODE</h3>
+          <p>Turn ON the <span class="link-highlight">Developer Mode</span> switch located at the top-right corner of the Extensions dashboard.</p>
+        </div>
       </div>
-    </div>
 
-    <!-- Step 4 -->
-    <div class="step-card">
-      <div class="step-number">4</div>
-      <div class="step-text">
-        <h3>PIN TO TOOLBAR</h3>
-        <p>Click the puzzle icon next to your profile picture in Chrome and click the Pin icon next to <span class="highlight">AutoCommit</span> to keep it handy!</p>
+      <!-- Step 4 -->
+      <div class="item-card">
+        <div class="item-number-block">4</div>
+        <div class="item-details">
+          <h3>LOAD UNPACKED PACK</h3>
+          <p>Click <span class="link-highlight">Load Unpacked</span> in the top-left, and select the extracted folder to install AutoCommit!</p>
+        </div>
       </div>
     </div>
 
   </div>
 
   <footer>
-    <p>&copy; 2026 AutoCommit. Crafted in Pixel Style.</p>
+    <p>AutoCommit v1.0.0 — Pixel Crafted GUI</p>
   </footer>
 
 </body>
