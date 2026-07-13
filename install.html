@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AutoCommit - Installation Hub</title>
+  <title>AutoCommit - Installation & Features</title>
   
   <!-- Typography Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -101,14 +101,41 @@
       font-weight: 600;
     }
 
-    /* Main Content Layout */
+    /* Section styling */
+    .section-header {
+      border-top: 3px solid var(--border-color);
+      margin-top: 50px;
+      padding-top: 30px;
+      margin-bottom: 25px;
+    }
+
+    .section-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+      font-weight: 700;
+    }
+
+    /* Content Layout Grids */
     .main-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 25px;
     }
 
-    /* Steps Cards styled exactly like the screenshot cards */
+    /* Features Bento Grid (2 columns) */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 25px;
+    }
+
+    @media (max-width: 600px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Steps & Features Cards */
     .step-card {
       background: #FFFFFF;
       border: 3px solid var(--border-color);
@@ -119,6 +146,29 @@
       align-items: flex-start;
       gap: 30px;
       position: relative;
+    }
+
+    .feature-card {
+      background: #FFFFFF;
+      border: 3px solid var(--border-color);
+      box-shadow: var(--card-shadow);
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .feature-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .feature-header h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
     }
 
     .step-content {
@@ -146,11 +196,10 @@
       letter-spacing: 0.5px;
     }
 
-    .step-description {
+    .step-description, .feature-description {
       font-size: 15px;
       color: var(--text-muted);
-      margin-bottom: 16px;
-      max-width: 650px;
+      line-height: 1.6;
     }
 
     /* Muted Badge Pills */
@@ -164,6 +213,10 @@
       font-weight: 600;
       color: var(--text-muted);
       text-transform: lowercase;
+    }
+
+    .badge-yellow {
+      background-color: var(--accent-yellow);
     }
 
     /* Number badge styled exactly like the "100" box in the screenshot */
@@ -206,39 +259,23 @@
     }
 
     /* Neo-Brutalist Buttons */
-    .btn-group {
-      display: flex;
-      gap: 15px;
-    }
-
     .btn {
       display: inline-block;
       text-decoration: none;
-      padding: 12px 24px;
-      font-size: 14px;
+      padding: 14px 28px;
+      font-size: 15px;
       font-weight: 700;
-      border: 2px solid var(--border-color);
+      border: 3px solid var(--border-color);
       box-shadow: var(--btn-shadow);
       cursor: pointer;
       transition: all 0.15s ease;
-      background: #FFFFFF;
-      color: var(--text-main);
-    }
-
-    .btn-primary {
-      background-color: var(--accent-teal);
+      background: var(--accent-teal);
       color: #FFFFFF;
     }
 
-    .btn-primary:hover {
+    .btn:hover {
       background-color: #086348;
       color: var(--accent-yellow);
-      transform: translate(-2px, -2px);
-      box-shadow: 6px 6px 0px var(--border-color);
-    }
-
-    .btn-secondary:hover {
-      background-color: var(--accent-beige);
       transform: translate(-2px, -2px);
       box-shadow: 6px 6px 0px var(--border-color);
     }
@@ -282,8 +319,8 @@
         <div class="label">Steps to Run</div>
       </div>
       <div class="bento-card">
-        <div class="number">0</div>
-        <div class="label">USD / Cost</div>
+        <div class="number">6</div>
+        <div class="label">Core Features</div>
       </div>
       <div class="bento-card">
         <div class="number">100%</div>
@@ -294,16 +331,20 @@
     <!-- Main Content List -->
     <div class="main-grid">
 
-      <!-- Action Card -->
+      <!-- Action Card (Cleaned: Single Download ZIP button) -->
       <div class="action-card">
         <div class="action-text">
           <h2>Get AutoCommit Bundle</h2>
           <p>Download the prepared resource package directly to your local workspace.</p>
         </div>
-        <div class="btn-group">
-          <a href="autocommit.zip" download class="btn btn-primary">Download ZIP</a>
-          <a href="https://github.com/k0-123/auto-commit-" target="_blank" class="btn btn-secondary">GitHub Repo</a>
+        <div>
+          <a href="autocommit.zip" download class="btn">Download ZIP File</a>
         </div>
+      </div>
+
+      <!-- Installation Section Header -->
+      <div class="section-header">
+        <h2>Installation Instructions</h2>
       </div>
 
       <!-- Step 1 -->
@@ -314,7 +355,7 @@
             <p class="sub">Step 01</p>
           </div>
           <p class="step-description">
-            Locate the downloaded <span class="link-highlight">autocommit.zip</span> file on your computer and extract it. This generates the folder containing the manifest.json and pre-compiled Javascript adapters.
+            Locate the downloaded <span style="font-weight:700;">autocommit.zip</span> file on your computer and extract it. This generates the folder containing the manifest.json and pre-compiled scripts.
           </p>
           <span class="badge">required</span>
         </div>
@@ -329,7 +370,7 @@
             <p class="sub">Step 02</p>
           </div>
           <p class="step-description">
-            Open Google Chrome or Microsoft Edge and navigate to the Extensions dashboard by typing <span class="link-highlight">chrome://extensions/</span> (or edge://extensions/) in the address bar.
+            Open Google Chrome or Microsoft Edge and navigate to the Extensions dashboard by typing <span style="font-weight:700;">chrome://extensions/</span> (or edge://extensions/) in the address bar.
           </p>
           <span class="badge">browser-console</span>
         </div>
@@ -344,7 +385,7 @@
             <p class="sub">Step 03</p>
           </div>
           <p class="step-description">
-            Locate the <span class="link-highlight">Developer Mode</span> switch in the top-right corner of the Extensions page and toggle it **ON**. This allows you to load custom extensions locally.
+            Locate the <span style="font-weight:700;">Developer Mode</span> switch in the top-right corner of the Extensions page and toggle it **ON**. This allows you to load custom extensions locally.
           </p>
           <span class="badge">system-setting</span>
         </div>
@@ -359,11 +400,85 @@
             <p class="sub">Step 04</p>
           </div>
           <p class="step-description">
-            Click the <span class="link-highlight">Load unpacked</span> button in the top-left corner. Select the extracted folder containing manifest.json to install and run the extension.
+            Click the <span style="font-weight:700;">Load unpacked</span> button in the top-left corner. Select the extracted folder containing manifest.json to install and run the extension.
           </p>
           <span class="badge">final-step</span>
         </div>
         <div class="step-badge-box">04</div>
+      </div>
+
+      <!-- Features Section Header -->
+      <div class="section-header">
+        <h2>Extension Features</h2>
+      </div>
+
+      <!-- Bento Grid for Features -->
+      <div class="features-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div class="feature-header">
+            <span class="badge badge-yellow">Scraper</span>
+            <h3>LeetCode Auto-Sync</h3>
+          </div>
+          <p class="feature-description">
+            Monitors LeetCode outcome status. Instantly extracts the accepted solution code, language file extension, and difficulty badges when a test run completes.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card">
+          <div class="feature-header">
+            <span class="badge badge-yellow">Scraper</span>
+            <h3>Codeforces Sync</h3>
+          </div>
+          <p class="feature-description">
+            Parses submission viewer detail pages. Scrapes rating scores, problem tags, programming language, and the full code body automatically.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div class="feature-header">
+            <span class="badge badge-yellow">Git Core</span>
+            <h3>Conflict Protection</h3>
+          </div>
+          <p class="feature-description">
+            Retrieves the existing file SHA hash before pushing to GitHub to prevent API overwrite conflicts, keeping your commit log clean and unbroken.
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card">
+          <div class="feature-header">
+            <span class="badge badge-yellow">Options</span>
+            <h3>Folder Layouts</h3>
+          </div>
+          <p class="feature-description">
+            Customizable structures. Group your repository files by platform folders (leetcode/), by difficulty (Easy/, Medium/), or upload flat files at the root level.
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card">
+          <div class="feature-header">
+            <span class="badge badge-yellow">Manual</span>
+            <h3>Manual Push Panel</h3>
+          </div>
+          <p class="feature-description">
+            A manual paste fallback panel. Easily copy-paste code, titles, and select difficulty labels to push solutions from other unsupported sites.
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card">
+          <div class="feature-header">
+            <span class="badge badge-yellow">Security</span>
+            <h3>100% Client-Side Privacy</h3>
+          </div>
+          <p class="feature-description">
+            Direct GitHub REST API wrapper. Your access tokens and push history are saved securely on your local chrome storage sandbox. No proxy servers used.
+          </p>
+        </div>
       </div>
 
     </div>
