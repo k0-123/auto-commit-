@@ -410,16 +410,18 @@ export default function App(): JSX.Element {
             {/* Folder settings panel */}
             <div className="bg-white border border-slate-100 rounded-xl p-3.5 shadow-sm flex flex-col gap-3">
               <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col">
+                <div className="flex flex-col min-w-0">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Target Location</span>
-                  <span className="text-xs font-bold text-slate-700 mt-0.5">{selectedRepo} ({selectedBranch})</span>
+                  <span className="text-xs font-bold text-slate-700 mt-0.5 truncate" title={selectedRepo}>
+                    {selectedRepo}
+                  </span>
                 </div>
                 
                 {/* Branch selector */}
                 <select
                   value={selectedBranch}
                   onChange={(e) => handleBranchChange(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 outline-none"
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 outline-none shrink-0 min-w-[90px]"
                 >
                   {branches.map((b) => (
                     <option key={b} value={b}>

@@ -1,6 +1,6 @@
 # Bug Report
 
-Thanks for helping improve Productivity Assistant! Please fill in as much as
+Thanks for helping improve AutoCommit! Please fill in as much as
 you can.
 
 ## Summary
